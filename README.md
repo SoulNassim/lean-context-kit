@@ -1,56 +1,94 @@
 # lean-context-kit
 
-A small, portable Agent Workflow and Loop Engineering Kit for projects that
-must work inside a constrained context window. It keeps shared operating rules
-in one core, exposes thin adapters for common agent environments, and uses
-verification gates instead of context-heavy narrative.
+`lean-context-kit` is a portable, low-bloat Agent Workflow and Loop Engineering
+Kit for Copilot environments with constrained context windows. The repository
+now contains the current Argon v3.1 workflow: one Orchestrator, nine bounded
+specialists, `/studio`, `/direction`, and the canonical Studio skill.
 
-## Architecture
+## One-tap Copilot integration
+
+### Windows / PowerShell
+
+From the repository root:
+
+```powershell
+.\install.ps1 -Workspace .
+```
+
+This installs the current workflow at user level and materializes workspace
+discovery files under `.github/`. Reload VS Code after installation.
+
+### Git Bash, macOS, or Linux
+
+```bash
+./install.sh --workspace .
+```
+
+The shell installer supports the same workspace integration and also installs
+the existing Cursor and Hermes adapters. Run `./install.sh --help` for options.
+
+The workspace target contains:
 
 ```text
-core/                         shared, model-agnostic procedures
-  context-shield.md           bounded context and state workflow
-  studio-loop.md              Builder <-> Adversarial Critic loop
-  WORKER_RULES.md             compact zero-copy subagent contract
+.github/
+  agents/                  orchestrator + 9 specialists
+  prompts/                 studio, direction, and install-copilot prompts
+  skills/studio/SKILL.md   canonical autonomous loop
+```
+
+That means an agent running from the repository can integrate the workflow with
+one command, without manually copying or reconstructing any Markdown files.
+The included `/install-copilot` prompt gives Copilot the same one-command
+procedure when the repository is already open.
+
+## Current Copilot workflow
+
+```text
+Orchestrator
+├── builder       engine, gameplay, telemetry, audio
+├── designer      UI, HUD, styling, particles, visual juice
+├── critic        headless playtest and five-score gate
+├── verifier      build, lint, and test verification
+├── patch-notes   visual before/after HTML report
+├── debugger      difficult root-cause analysis
+├── scout         bounded search and mapping
+├── reviewer      diff and regression review
+└── worker        other bounded tasks
+```
+
+All specialists are `user-invocable: false`; only the Orchestrator is the
+master agent. `/studio` dispatches Builder or Designer work, runs the Critic,
+updates `STATE.md`, and continues without asking between rounds until all five
+scores reach 8/10 or a safe stop condition fires. `/direction` records a new
+user style direction in `DESIGN.md` and queues implementation tasks.
+
+## Repository architecture
+
+```text
+core/                         model-agnostic operating procedures
+  context-shield.md           bounded context and verification guide
+  studio-loop.md              portable Builder <-> Critic loop
+  WORKER_RULES.md             compact zero-copy worker contract
 adapters/
-  vscode/                     VS Code agent and prompt templates
+  vscode/
+    agents/                   current Copilot agent bundle
+    prompts/                  current Studio and Direction prompts
+    skills/studio/SKILL.md    current Studio skill
   cursor/                     Cursor command templates
   hermes/                     Hermes skill templates
-scripts/
-  playtest.mjs                headless Playwright contract test
-  ai-init.sh                  bootstrap another project
-templates/STATE.md            clean durable-state starter
-install.sh                    build, substitute, and install adapters
+.github/                      workspace-ready Copilot integration
+scripts/                      playtest and project bootstrap utilities
+install.sh                    cross-platform installer
+install.ps1                   native Windows one-tap installer
 ```
 
-The core files are the source of truth. Adapters are intentionally thin so the
-same loop behaves consistently across environments without skill bloat.
+`adapters/vscode/` is the source bundle. `.github/` is a materialized copy for
+immediate workspace discovery; rerun the installer after changing the source
+bundle so both stay synchronized.
 
-## One-command installation
+## Configuration
 
-From the kit root:
-
-```bash
-./install.sh
-```
-
-On Windows, run it from Git Bash. The installer reads `config.env` when present
-and otherwise falls back to `config.example.env`. To customize local values:
-
-```bash
-cp config.example.env config.env
-./install.sh
-```
-
-The private `config.env` is ignored by Git. Override the destination directories
-for a smoke test or a managed setup with `VSCODE_USER_PROMPTS_DIR`,
-`CURSOR_COMMANDS_DIR`, and `HERMES_SKILLS_DIR`. Unix-like systems use symbolic
-links; Windows shells receive copies. The generated `.build/` directory is
-ignored and contains the substituted files.
-
-## Runtime placeholders
-
-Markdown templates use only these universal runtime placeholders:
+The generic core templates use these placeholders:
 
 ```text
 {{REASONING_MODEL}}
@@ -59,48 +97,43 @@ Markdown templates use only these universal runtime placeholders:
 {{CONTEXT_LIMIT}}
 ```
 
-The example environment file contains sample defaults, but the kit does not
-require a particular provider or model. Do not place credentials in
-`config.example.env`, prompts, screenshots, or commits.
+Copy `config.example.env` to `config.env` for local overrides. The current
+Copilot adapter intentionally pins the active routing used by this setup:
+`gpt-6-studierende` for reasoning agents and `qwen3.8-27b` for context-heavy
+specialists. The core procedures remain model-agnostic.
+
+Never commit credentials or private configuration.
 
 ## Context Shield
 
-`core/context-shield.md` is the operating guide for strict context hygiene:
+`core/context-shield.md` defines the seven-section operating guide:
 
-- Keep active work within a 60% safe working budget.
-- Cap individual reads at 120 lines and terminal output with
-  `2>&1 | tail -n 30`.
-- Keep main-thread edit batches to three or fewer.
-- Use zero-copy worker briefs through `.agent/WORKER_RULES.md`.
-- Record UI evidence in `docs/patch-notes/`.
-- Maintain atomic tasks and a verification gate in `STATE.md`.
+- 60% safe working budget
+- 120-line text-read cap
+- bounded terminal output
+- no more than three main-thread edit batches
+- zero-copy worker briefs through `.agent/WORKER_RULES.md`
+- visual evidence in `docs/patch-notes/`
+- durable `STATE.md` checkpoints with a verification gate
 
-The guide is designed to be resumed: a handoff names verified facts, open
-risks, and one executable next action instead of copying the whole context.
+## Studio loop
 
-## Studio: Builder <-> Adversarial Critic
+The Studio loop bootstraps a five-tier roadmap:
 
-`core/studio-loop.md` defines an autonomous game-building loop:
+1. Core loop and telemetry
+2. Depth and variety
+3. Visual juice and polish
+4. Audio, upgrades, and meta-loop
+5. UI, accessibility, and release polish
 
-1. **Phase 0** establishes a five-tier roadmap: core and telemetry, depth and
-   variety, visual juice, audio/feedback and meta-loop, then UI/accessibility
-   polish. It also requires `window.__GAME_STATE__` with `fps`, `scene`, `score`,
-   `playerHp`, `enemies`, `particles`, and `upgrades`, plus
-   `window.__AUTOPLAY__(true)` for deterministic checks.
-2. **Phase 1** has the Builder implement the smallest verified vertical slice.
-3. **Phase 2** runs an endless Builder <-> read-only Adversarial Critic loop.
-   The Critic scores Depth / Mechanics, Visual Juice / Polish, Audio / Feedback,
-   and Zero-Bug Stability from 1 to 10. Every axis must reach at least 8/10.
-   Findings become queued corrective tasks, and the loop continues without
-   asking the user between rounds.
-4. **Phase 3** runs the release checks and records the final evidence.
-
-The loop stops only when the gate passes, a genuine blocker is recorded, or a
-safe context boundary requires a precise checkpoint.
+The project must expose `window.__GAME_STATE__` and
+`window.__AUTOPLAY__(true)` so the Critic can run deterministic headless
+playtests. Visual rounds may run `builder` and `designer` in parallel only when
+their file scopes are independent. The Critic captures
+`docs/patch-notes/latest-screen.png` and reports evidence for every score below
+8.
 
 ## Playtesting
-
-The headless script expects a running project and the Playwright package:
 
 ```bash
 npm install --save-dev playwright
@@ -108,10 +141,9 @@ npx playwright install chromium
 node scripts/playtest.mjs http://localhost:4173
 ```
 
-It enables autoplay, simulates inputs for eight seconds, captures console and
-page errors, validates the required state keys, reads `window.__GAME_STATE__`,
-and writes `docs/patch-notes/latest-screen.png`. Set `PLAYTEST_URL` or
-`PLAYTEST_SCREENSHOT` to override the defaults.
+The script enables autoplay, simulates inputs for eight seconds, captures
+console and page errors, validates required state keys, and saves the latest
+screen.
 
 ## Bootstrap another project
 
@@ -119,12 +151,5 @@ and writes `docs/patch-notes/latest-screen.png`. Set `PLAYTEST_URL` or
 ./scripts/ai-init.sh /path/to/project
 ```
 
-The script copies `.agent/WORKER_RULES.md` and `scripts/playtest.mjs`, and
-creates a starter `STATE.md` without overwriting an existing state file.
-
-## Privacy and contribution rules
-
-Review generated files before sharing them. Keep local configuration, generated
-builds, worker output, and state ledgers out of the repository unless a project
-explicitly wants them. Add shared behavior to `core/`, environment-specific
-glue to `adapters/`, and update the smallest relevant verification check.
+This copies `.agent/WORKER_RULES.md`, the Playwright contract, and a clean
+`STATE.md` starter without overwriting an existing state file.

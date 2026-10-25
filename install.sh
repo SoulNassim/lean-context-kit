@@ -4,6 +4,36 @@ set -euo pipefail
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 BUILD_DIR="$SCRIPT_DIR/.build"
 CONFIG_FILE="${CONFIG_FILE:-$SCRIPT_DIR/config.env}"
+WORKSPACE_DIR=""
+
+usage() {
+  cat <<'EOF'
+Usage: ./install.sh [--workspace PATH]
+
+Installs the current Copilot workflow for the user. When --workspace is
+provided, it also materializes .github/agents, .github/prompts, and
+.github/skills/studio in that workspace for automatic VS Code discovery.
+EOF
+}
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --workspace)
+      [ "$#" -ge 2 ] || { printf '%s\n' '--workspace requires a path' >&2; exit 2; }
+      WORKSPACE_DIR="$2"
+      shift 2
+      ;;
+    --help|-h)
+      usage
+      exit 0
+      ;;
+    *)
+      printf 'Unknown argument: %s\n' "$1" >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+done
 if [ ! -f "$CONFIG_FILE" ]; then
   CONFIG_FILE="$SCRIPT_DIR/config.example.env"
 fi
@@ -74,10 +104,14 @@ replace_placeholders() {
 }
 
 rm -rf "$BUILD_DIR"
-mkdir -p "$BUILD_DIR/core" "$BUILD_DIR/adapters/vscode" \
+mkdir -p "$BUILD_DIR/core" "$BUILD_DIR/adapters/vscode/agents" \
+  "$BUILD_DIR/adapters/vscode/prompts" "$BUILD_DIR/adapters/vscode/skills/studio" \
   "$BUILD_DIR/adapters/cursor" "$BUILD_DIR/adapters/hermes"
 cp "$SCRIPT_DIR"/core/*.md "$BUILD_DIR/core/"
-cp "$SCRIPT_DIR"/adapters/vscode/*.md "$BUILD_DIR/adapters/vscode/"
+cp "$SCRIPT_DIR"/adapters/vscode/agents/*.agent.md "$BUILD_DIR/adapters/vscode/agents/"
+cp "$SCRIPT_DIR"/adapters/vscode/prompts/*.prompt.md "$BUILD_DIR/adapters/vscode/prompts/"
+cp "$SCRIPT_DIR"/adapters/vscode/skills/studio/SKILL.md \
+  "$BUILD_DIR/adapters/vscode/skills/studio/SKILL.md"
 cp "$SCRIPT_DIR"/adapters/cursor/*.md "$BUILD_DIR/adapters/cursor/"
 cp -R "$SCRIPT_DIR"/adapters/hermes/. "$BUILD_DIR/adapters/hermes/"
 
@@ -109,14 +143,27 @@ link_or_copy() {
   fi
 }
 
-link_or_copy "$BUILD_DIR/adapters/vscode/context-shield.agent.md" \
-  "$VSCODE_USER_PROMPTS_DIR/context-shield.agent.md"
-link_or_copy "$BUILD_DIR/adapters/vscode/studio.prompt.md" \
+copy_file() {
+  source_path="$1"
+  target_path="$2"
+  mkdir -p "$(dirname "$target_path")"
+  rm -rf "$target_path"
+  cp -R "$source_path" "$target_path"
+}
+
+COPILOT_AGENTS_DIR="${COPILOT_AGENTS_DIR:-$HOME/.copilot/agents}"
+COPILOT_SKILLS_DIR="${COPILOT_SKILLS_DIR:-$HOME/.copilot/skills}"
+
+for agent_file in "$BUILD_DIR"/adapters/vscode/agents/*.agent.md; do
+  link_or_copy "$agent_file" \
+    "$COPILOT_AGENTS_DIR/$(basename "$agent_file")"
+done
+link_or_copy "$BUILD_DIR/adapters/vscode/prompts/studio.prompt.md" \
   "$VSCODE_USER_PROMPTS_DIR/studio.prompt.md"
-link_or_copy "$BUILD_DIR/core/context-shield.md" \
-  "$VSCODE_USER_PROMPTS_DIR/context-shield-core.md"
-link_or_copy "$BUILD_DIR/core/studio-loop.md" \
-  "$VSCODE_USER_PROMPTS_DIR/studio-loop-core.md"
+link_or_copy "$BUILD_DIR/adapters/vscode/prompts/direction.prompt.md" \
+  "$VSCODE_USER_PROMPTS_DIR/direction.prompt.md"
+link_or_copy "$BUILD_DIR/adapters/vscode/skills/studio/SKILL.md" \
+  "$COPILOT_SKILLS_DIR/studio/SKILL.md"
 
 link_or_copy "$BUILD_DIR/adapters/cursor/context-shield.md" \
   "$CURSOR_COMMANDS_DIR/context-shield.md"
@@ -140,7 +187,24 @@ for skill in context-shield studio; do
     "$HERMES_SKILLS_DIR/$skill/references/$core_name-core.md"
 done
 
+if [ -n "$WORKSPACE_DIR" ]; then
+  WORKSPACE_DIR="$(CDPATH= cd -- "$WORKSPACE_DIR" && pwd)"
+  for agent_file in "$BUILD_DIR"/adapters/vscode/agents/*.agent.md; do
+    copy_file "$agent_file" \
+      "$WORKSPACE_DIR/.github/agents/$(basename "$agent_file")"
+  done
+  copy_file "$BUILD_DIR/adapters/vscode/prompts/studio.prompt.md" \
+    "$WORKSPACE_DIR/.github/prompts/studio.prompt.md"
+  copy_file "$BUILD_DIR/adapters/vscode/prompts/direction.prompt.md" \
+    "$WORKSPACE_DIR/.github/prompts/direction.prompt.md"
+  copy_file "$BUILD_DIR/adapters/vscode/skills/studio/SKILL.md" \
+    "$WORKSPACE_DIR/.github/skills/studio/SKILL.md"
+  printf 'Installed workspace Copilot files in %s/.github\n' "$WORKSPACE_DIR"
+fi
+
 printf 'Built substituted templates in %s\n' "$BUILD_DIR"
+printf 'Installed Copilot agents in %s\n' "$COPILOT_AGENTS_DIR"
 printf 'Installed VS Code prompts in %s\n' "$VSCODE_USER_PROMPTS_DIR"
+printf 'Installed Copilot skills in %s\n' "$COPILOT_SKILLS_DIR"
 printf 'Installed Cursor commands in %s\n' "$CURSOR_COMMANDS_DIR"
 printf 'Installed Hermes skills in %s\n' "$HERMES_SKILLS_DIR"
