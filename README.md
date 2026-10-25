@@ -5,6 +5,9 @@ Kit for Copilot environments with constrained context windows. The repository
 now contains the current Argon v3.1 workflow: one Orchestrator, nine bounded
 specialists, `/studio`, `/direction`, and the canonical Studio skill.
 
+See [AGENT_README.md](./AGENT_README.md) for user-profile integration, sharing
+instructions, and Astra/Uni provider routing.
+
 ## One-tap Copilot integration
 
 ### Windows / PowerShell
