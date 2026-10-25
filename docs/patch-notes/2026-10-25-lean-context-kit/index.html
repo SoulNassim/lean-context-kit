@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>lean-context-kit - implementation notes</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: system-ui, sans-serif;
+        line-height: 1.5;
+        background: #10151c;
+        color: #e8edf2;
+      }
+      body {
+        max-width: 58rem;
+        margin: 0 auto;
+        padding: 2rem 1.25rem 4rem;
+      }
+      code {
+        padding: 0.1rem 0.3rem;
+        border-radius: 0.25rem;
+        background: #25303b;
+      }
+      li { margin-block: 0.45rem; }
+      .status {
+        border-left: 0.35rem solid #47c78a;
+        padding: 0.75rem 1rem;
+        background: #17251f;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>lean-context-kit</h1>
+    <p class="status"><strong>Status:</strong> implemented and verified as a
+      documentation and tooling repository.</p>
+
+    <h2>Scope</h2>
+    <p>This is a new, non-visual project. There is no application screenshot
+      baseline or before/after UI comparison for this patch note.</p>
+
+    <h2>Implemented surfaces</h2>
+    <ul>
+      <li>Seven-section Context Shield guide with bounded reads, safe context
+        budget, delegation contract, visual evidence workflow, and state gate.</li>
+      <li>Five-tier Studio roadmap with deterministic game hooks and an
+        autonomous Builder and Adversarial Critic loop.</li>
+      <li>VS Code, Cursor, and Hermes adapter templates using universal runtime
+        placeholders.</li>
+      <li>Cross-platform installer, project bootstrap script, and headless
+        Playwright contract test.</li>
+    </ul>
+
+    <h2>Verification evidence</h2>
+    <ul>
+      <li><code>bash -n install.sh</code> passed.</li>
+      <li><code>bash -n scripts/ai-init.sh</code> passed.</li>
+      <li><code>node --check scripts/playtest.mjs</code> passed.</li>
+      <li>The required file structure and 12-line worker contract were checked.</li>
+      <li>The core Markdown grep check found no configured model-name leaks.</li>
+      <li>An installer smoke test substituted the example configuration into
+        temporary VS Code, Cursor, and Hermes destinations successfully.</li>
+      <li>An <code>ai-init.sh</code> smoke test copied the worker and playtest
+        files while preserving an existing <code>STATE.md</code>.</li>
+    </ul>
+
+    <h2>Reproduction</h2>
+    <p>Run <code>./install.sh</code> from the repository root. For a running
+      application, use <code>node scripts/playtest.mjs</code> and review the
+      generated <code>latest-screen.png</code> alongside console and state
+      diagnostics.</p>
+  </body>
+</html>

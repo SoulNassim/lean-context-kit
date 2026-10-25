@@ -1,0 +1,18 @@
+# Local configuration
+config.env
+
+# Agent working files
+.agent-out/
+.agent/
+STATE.md
+.build/
+
+# Dependencies
+node_modules/
+
+# Playwright artifacts
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+docs/patch-notes/latest-screen.png
