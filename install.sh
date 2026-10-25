@@ -105,7 +105,7 @@ link_or_copy() {
   if [ "$IS_WINDOWS" -eq 1 ]; then
     cp -R "$source_path" "$target_path"
   else
-    ln -s "$source_path" "$target_path"
+    ln -sf "$source_path" "$target_path"
   fi
 }
 
